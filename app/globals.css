@@ -1,26 +1,54 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tw-animate-css";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-space-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Deep Charcoal Theme */
+  --background: #111111;
+  /* Almost Black */
+  --foreground: #e0e0ee;
+  /* Off-white */
+
+  /* Borders must be visible on dark bg */
+  --border-color: #333333;
+
+  --surface: #1a1a1a;
+  --surface-highlight: #2a2a2a;
+
+  --accent-yellow: #fce94f;
+  --accent-blue: #729fcf;
+  --accent-red: #ff5555;
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-mono);
+    -webkit-font-smoothing: none;
+    /* Pixelated crispness */
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Reset all inputs and buttons */
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    border-radius: 0;
+  }
+
+  /* Text selection color */
+  ::selection {
+    background: var(--accent-yellow);
+    color: #000;
+  }
+
+  /* Utility for the pressed effect */
+  .active-press:active {
+    transform: translate(2px, 2px);
+  }
 }
