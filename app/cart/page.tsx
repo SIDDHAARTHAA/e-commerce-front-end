@@ -10,6 +10,7 @@ import { useToast } from "@/context/ToastContext";
 type Address = {
     id: number;
     lineOne: string;
+    lineTwo?: string;
     city: string;
     country: string;
     pincode: string;
@@ -35,6 +36,7 @@ export default function CartPage() {
     const [showAddAddress, setShowAddAddress] = useState(false);
     const [newAddress, setNewAddress] = useState({
         lineOne: "",
+        lineTwo: "",
         city: "",
         country: "",
         pincode: ""
@@ -47,9 +49,24 @@ export default function CartPage() {
                 api.get("/users/address")
             ]);
 
-            // Handle potential wrapper (e.g., { data: { items: ... } } or { items: ... })
-            // Logic: if the response root represents the cart (has items), use it. Otherwise try .data
-            const cartData = cartRes.data && cartRes.data.items ? cartRes.data : (cartRes.data.data || cartRes.data);
+            // Backend sends raw array of cart items
+            const cartArray = Array.isArray(cartRes.data) ? cartRes.data : cartRes.data.items || cartRes.data;
+
+            // Transform array into CartData structure
+            const totalPrice = cartArray.reduce((sum: number, item: any) => {
+                return sum + (parseFloat(item.product.price) * item.quantity);
+            }, 0);
+
+            const totalQuantity = cartArray.reduce((sum: number, item: any) => {
+                return sum + item.quantity;
+            }, 0);
+
+            const cartData: CartData = {
+                items: cartArray,
+                totalPrice,
+                totalQuantity
+            };
+
             console.log("Cart Data Loaded:", cartData);
             setCart(cartData);
 
@@ -98,8 +115,16 @@ export default function CartPage() {
             const res = await api.post("/users/address", newAddress);
             const created = res.data;
             setAddresses([...addresses, created]);
+            // Auto-select the newly added address as the default
             setSelectedAddressId(created.id);
             setShowAddAddress(false);
+            setNewAddress({
+                lineOne: "",
+                lineTwo: "",
+                city: "",
+                country: "",
+                pincode: ""
+            });
             showToast("Address added successfully", "success");
         } catch (e) {
             showToast("Failed to add address", "error");
@@ -108,15 +133,24 @@ export default function CartPage() {
 
     const handleCheckout = async () => {
         if (!selectedAddressId) {
-            showToast("Please select regular shipping address", "error");
+            showToast("Please select a shipping address", "error");
             return;
         }
 
         try {
-            await api.post("/orders", { shippingAddressId: selectedAddressId });
+            // Set selected address as default using /users/update endpoint
+            await api.post("/users/update", {
+                defaultShippingAddressId: selectedAddressId
+            });
+
+            // Then create order (which will use the default address)
+            await api.post("/orders");
+
             showToast("Order placed successfully!", "success");
+            setCart(null);
             router.push("/orders");
-        } catch (e) {
+        } catch (error: any) {
+            console.error("Checkout error:", error);
             showToast("Failed to place order", "error");
         }
     };
@@ -162,26 +196,28 @@ export default function CartPage() {
 
                     {addresses.length > 0 ? (
                         <div className="mb-4">
+                            <label className="block text-xs text-[#aaa] mb-2 uppercase font-bold">Select Default Shipping Address:</label>
                             <select
                                 className="w-full border-2 border-[#111] p-3 bg-[#222] text-[#fff] focus:outline-none focus:border-[#fce94f]"
                                 value={selectedAddressId || ""}
                                 onChange={(e) => setSelectedAddressId(Number(e.target.value))}
                             >
+                                <option value="">-- Select Address --</option>
                                 {addresses.map(addr => (
                                     <option key={addr.id} value={addr.id}>
-                                        {addr.lineOne}, {addr.city}
+                                        {addr.lineOne}{addr.lineTwo ? `, ${addr.lineTwo}` : ''}, {addr.city}, {addr.country}
                                     </option>
                                 ))}
                             </select>
                         </div>
                     ) : (
-                        <div className="mb-4 text-sm text-[#ff5555]">No address found. Please add one.</div>
+                        <div className="mb-4 text-sm text-[#ff5555]">No address found. Please add one to proceed with checkout.</div>
                     )}
 
                     {!showAddAddress ? (
                         <button
                             onClick={() => setShowAddAddress(true)}
-                            className="text-sm underline mb-4 text-[#729fcf] hover:text-[#fff]"
+                            className="px-4 py-2 mb-4 bg-[#333] text-[#729fcf] font-bold border-b-4 border-r-4 border-[#111] hover:bg-[#444] active:border-b-0 active:border-r-0 active:translate-x-[4px] active:translate-y-[4px] transition-all text-sm"
                         >
                             + ADD NEW ADDRESS
                         </button>
@@ -190,6 +226,8 @@ export default function CartPage() {
                             <div className="grid gap-3 mb-4">
                                 <input placeholder="Address Line 1" className="border-2 border-[#111] p-2 w-full bg-[#222] text-[#fff]"
                                     value={newAddress.lineOne} onChange={e => setNewAddress({ ...newAddress, lineOne: e.target.value })} required />
+                                <input placeholder="Address Line 2 (Optional)" className="border-2 border-[#111] p-2 w-full bg-[#222] text-[#fff]"
+                                    value={newAddress.lineTwo} onChange={e => setNewAddress({ ...newAddress, lineTwo: e.target.value })} />
                                 <div className="grid grid-cols-2 gap-3">
                                     <input placeholder="City" className="border-2 border-[#111] p-2 w-full bg-[#222] text-[#fff]"
                                         value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} required />
@@ -200,8 +238,8 @@ export default function CartPage() {
                                     value={newAddress.country} onChange={e => setNewAddress({ ...newAddress, country: e.target.value })} required />
                             </div>
                             <div className="flex gap-4">
-                                <button type="submit" className="border-b-4 border-r-4 border-[#111] px-4 py-2 bg-[#fce94f] text-[#000] font-bold text-sm active:border-b-0 active:border-r-0 active:translate-x-[2px] active:translate-y-[2px]">SAVE_ADDR</button>
-                                <button type="button" onClick={() => setShowAddAddress(false)} className="text-sm underline text-[#aaa] hover:text-[#fff]">CANCEL</button>
+                                <button type="submit" className="border-b-4 border-r-4 border-[#111] px-4 py-2 bg-[#fce94f] text-[#000] font-bold text-sm active:border-b-0 active:border-r-0 active:translate-x-[2px] active:translate-y-[2px] hover:bg-[#ffe066] transition-all">SAVE_ADDR</button>
+                                <button type="button" onClick={() => setShowAddAddress(false)} className="px-4 py-2 text-sm font-bold bg-[#333] text-[#aaa] border-b-4 border-r-4 border-[#111] hover:bg-[#444] active:border-b-0 active:border-r-0 active:translate-x-[2px] active:translate-y-[2px] transition-all">CANCEL</button>
                             </div>
                         </form>
                     )}

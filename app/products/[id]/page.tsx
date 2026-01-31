@@ -99,7 +99,7 @@ export default function ProductDetailPage() {
                         <div>
                             <span className="bg-[#729fcf] text-black font-bold px-2 py-1 text-sm uppercase block w-fit mb-2">Specs</span>
                             <div className="text-sm text-[#bbb] space-y-1">
-                                <p><span className="text-[#aaa]">PRICE:</span> <span className="text-[#e0e0ee] text-lg font-bold">₹{product.price.toFixed(2)}</span></p>
+                                <p><span className="text-[#aaa]">PRICE:</span> <span className="text-[#e0e0ee] text-lg font-bold">${product.price.toFixed(2)}</span></p>
                                 <p><span className="text-[#aaa]">TAGS:</span> [{product.tags}]</p>
                             </div>
                         </div>

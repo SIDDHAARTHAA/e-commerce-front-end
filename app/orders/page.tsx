@@ -62,7 +62,7 @@ export default function OrdersPage() {
                                 </div>
                             </div>
                             <div className="font-bold text-2xl text-[#e0e0ee]">
-                                ₹{Number(order.netAmount || 0).toFixed(2)}
+                                ${Number(order.netAmount || 0).toFixed(2)}
                             </div>
                         </div>
 
@@ -70,7 +70,7 @@ export default function OrdersPage() {
                             {order.orderProducts.map((p) => (
                                 <div key={p.id} className="text-sm flex justify-between items-center text-[#e0e0ee] bg-[#2a2a2a] p-2 border border-[#444]">
                                     <span>{p.quantity} x <span className="text-[#729fcf] font-bold">{p.name}</span></span>
-                                    <span className="font-mono">₹{(p.price * p.quantity).toFixed(2)}</span>
+                                    <span className="font-mono">${(p.price * p.quantity).toFixed(2)}</span>
                                 </div>
                             ))}
                         </div>
