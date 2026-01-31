@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://api.sidlabs.shop/api/:path*",
+        destination: process.env.API_URL || "http://localhost:8000/api/:path*",
       },
     ];
   },
